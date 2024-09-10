@@ -131,7 +131,7 @@ namespace FotosAPI.Controllers
         }
 
         
-        [HttpPost]
+        [HttpGet]
         [Route("view/{id}")]
         public IActionResult DownloadPhoto(int id)
         {
