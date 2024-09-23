@@ -30,7 +30,7 @@ namespace FotosAPI.Models
             Height = height;          
             UploadedAt = uploadedAt;
             UploadedBy = uploadedBy;
-            ApplicationId = applicationId; //Token
+            ApplicationId = applicationId;
             IsThumbnail = isThumbnail;
         }
 

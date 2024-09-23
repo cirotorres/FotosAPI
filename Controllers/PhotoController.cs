@@ -1,4 +1,4 @@
-﻿using FotosAPI.DTOs;
+﻿
 using FotosAPI.Models;
 using FotosAPI.ViewModel;
 using Microsoft.AspNetCore.Authorization;
@@ -33,7 +33,7 @@ namespace FotosAPI.Controllers
         [Route("upload")]
         public IActionResult Add([FromForm] PhotoViewModel photoView)
         {
-            
+
             // Extrai as claims do token JWT
             var uploadedBy = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Pegando "nameidentifier" (sub)
             var applicationId = User.FindFirst("appId")?.Value; // Pegando "appId"
@@ -56,44 +56,54 @@ namespace FotosAPI.Controllers
 
             // Processo de redimensionamento da imagem
             int width, height;
-            using (Stream fileStream = new FileStream(filePath, FileMode.Create))
+            try
             {
-                // Load imagem usando ImageSharp
-                using (var image = Image.Load(photoView.Picture.OpenReadStream()))
+                using (Stream fileStream = new FileStream(filePath, FileMode.Create))
                 {
-                    // Captura a largura e altura da imagem
-                    width = image.Width;
-                    height = image.Height;
-
-                    // Usuário reduz a qualidade da imagem usando o atributo "Quality"
-                    var encoder = new JpegEncoder { Quality = photoView.Quality };
-                    image.Save(fileStream, encoder);
-
-                    // Criando miniatura/thumbnails
-                    if (photoView.Thumbnail)
+                    // Load imagem usando ImageSharp
+                    using (var image = Image.Load(photoView.Picture.OpenReadStream()))
                     {
-                        var thumbnailDirectory = Path.Combine("Storage", applicationId, "thumbnails");
-                        var thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
+                        // Captura a largura e altura da imagem
+                        width = image.Width;
+                        height = image.Height;
 
-                        if (!Directory.Exists(thumbnailDirectory))
+                        // Usuário reduz a qualidade da imagem usando o atributo "Quality"
+                        var encoder = new JpegEncoder { Quality = photoView.Quality };
+                        image.Save(fileStream, encoder);
+
+                        // Criando miniatura/thumbnails
+                        if (photoView.Thumbnail)
                         {
-                            Directory.CreateDirectory(thumbnailDirectory);
-                        }
+                            var thumbnailDirectory = Path.Combine("Storage", applicationId, "thumbnails");
+                            var thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
 
-                        // Redimensiona a thumbnail
-                        int thumbnailWidth = 150;
-                        int thumbnailHeight = (image.Height * thumbnailWidth) / image.Width; // Proporção 
+                            if (!Directory.Exists(thumbnailDirectory))
+                            {
+                                Directory.CreateDirectory(thumbnailDirectory);
+                            }
 
-                        image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
+                            // Redimensiona a thumbnail
+                            int thumbnailWidth = 150;
+                            int thumbnailHeight = (image.Height * thumbnailWidth) / image.Width; // Proporção 
 
-                        // Salva a thumbnail
-                        using (var thumbnailStream = new FileStream(thumbnailPath, FileMode.Create))
-                        {
-                            image.Save(thumbnailStream, encoder); // Usa o mesmo encoder para a thumbnail
+                            image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
+
+                            // Salva a thumbnail
+                            using (var thumbnailStream = new FileStream(thumbnailPath, FileMode.Create))
+                            {
+                                image.Save(thumbnailStream, encoder); // Usa o mesmo encoder para a thumbnail
+                            }
                         }
                     }
                 }
+
             }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro ao fazer upload: {ex.Message}");
+                return StatusCode(500, "Erro interno ao processar a imagem.");
+            }
+
 
             //Hora local
             var UploadedAt = DateTime.UtcNow;
@@ -118,6 +128,32 @@ namespace FotosAPI.Controllers
 
         [AllowAnonymous]
         [HttpGet]
+        [Route("AllList")]
+        public IActionResult GetAll()
+        {
+            // Lista todos os objetos cadastrados
+            var obj = _photoRepository.GetAll();
+
+            if (obj == null || !obj.Any())
+                return NotFound("Lista vazia!");
+
+            var photoreturnDTO = obj.Select(photo => new PhotoDTO(
+
+                Id: photo.Id,
+                Title: photo.Title,
+                UploadedBy: photo.UploadedBy,
+                ApplicationId: photo.ApplicationId,
+                UploadedAt: photo.UploadedAt
+
+                )).ToList();
+
+
+            return Ok(photoreturnDTO);
+        }
+
+
+        [AllowAnonymous]
+        [HttpGet]
         [Route("find/{id}")]
         public IActionResult Get(int id)
         {
@@ -130,9 +166,11 @@ namespace FotosAPI.Controllers
             return Ok(obj);
         }
 
-        
-        [HttpPost]
+
+
+        [HttpGet]
         [Route("view/{id}")]
+        [ResponseCache(Duration = 300)]
         public IActionResult DownloadPhoto(int id)
         {
             var pic = _photoRepository.Get(id);
@@ -152,6 +190,8 @@ namespace FotosAPI.Controllers
 
             return File(dataBytes, "image/jpg");
         }
+
+
         [Authorize]
         [HttpDelete]
         [Route("delete/{id}")]

@@ -112,3 +112,4 @@ E:\PROGRAMACAO\VS\ProjetosVS\Pecem\FotosAPI\FotosAPI\bin\Debug\net8.0\System.Ide
 E:\PROGRAMACAO\VS\ProjetosVS\Pecem\FotosAPI\FotosAPI\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 E:\PROGRAMACAO\VS\ProjetosVS\Pecem\FotosAPI\FotosAPI\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.dll
 E:\PROGRAMACAO\VS\ProjetosVS\Pecem\FotosAPI\FotosAPI\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+E:\PROGRAMACAO\VS\ProjetosVS\Pecem\FotosAPI\FotosAPI\obj\Debug\net8.0\FotosAPI.sourcelink.json

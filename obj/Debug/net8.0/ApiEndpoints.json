@@ -11,6 +11,16 @@
   },
   {
     "ContainingType": "FotosAPI.Controllers.PhotoController",
+    "Method": "GetAll",
+    "RelativePath": "photos/AllList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FotosAPI.Controllers.PhotoController",
     "Method": "Delete",
     "RelativePath": "photos/delete/{id}",
     "HttpMethod": "DELETE",
@@ -76,7 +86,7 @@
     "ContainingType": "FotosAPI.Controllers.PhotoController",
     "Method": "DownloadPhoto",
     "RelativePath": "photos/view/{id}",
-    "HttpMethod": "POST",
+    "HttpMethod": "GET",
     "IsController": true,
     "Order": 0,
     "Parameters": [

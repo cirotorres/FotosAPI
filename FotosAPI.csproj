@@ -7,10 +7,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DTOs\**" />
     <Compile Remove="Storage\thumbnails\**" />
+    <Content Remove="DTOs\**" />
     <Content Remove="Storage\thumbnails\**" />
+    <EmbeddedResource Remove="DTOs\**" />
     <EmbeddedResource Remove="Storage\thumbnails\**" />
+    <None Remove="DTOs\**" />
     <None Remove="Storage\thumbnails\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Models\PhotoDTOss.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,7 +37,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Repositories\" />
     <Folder Include="Storage\" />
   </ItemGroup>
 

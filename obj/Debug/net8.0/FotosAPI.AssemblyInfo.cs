@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("FotosAPI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6f9b5ab81b44ffc29283dfd1fd3e0da0034a72b8")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1f1d8ef6459530537aa1d45e864250bddf6f5dae")]
 [assembly: System.Reflection.AssemblyProductAttribute("FotosAPI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("FotosAPI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
