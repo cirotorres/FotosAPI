@@ -166,8 +166,6 @@ namespace FotosAPI.Controllers
             return Ok(obj);
         }
 
-
-
         [HttpGet]
         [Route("view/{id}")]
         [ResponseCache(Duration = 300)]
