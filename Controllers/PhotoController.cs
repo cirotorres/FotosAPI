@@ -152,7 +152,7 @@ namespace FotosAPI.Controllers
         }
 
 
-        [AllowAnonymous]
+        [Authorize]
         [HttpGet]
         [Route("find/{id}")]
         public IActionResult Get(int id)
@@ -166,6 +166,7 @@ namespace FotosAPI.Controllers
             return Ok(obj);
         }
 
+        [Authorize]
         [HttpGet]
         [Route("view/{id}")]
         [ResponseCache(Duration = 300)]
