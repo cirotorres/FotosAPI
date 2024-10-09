@@ -49,19 +49,20 @@ builder.Services.AddSwaggerGen(c =>
 
 });
 
-builder.Services.AddTransient<IPhotoRepository, PhotoRepository>();
-builder.Services.AddTransient<ITokenService, TokenService>();
+builder.Services.AddTransient<IPhotoRepository, PhotoRepository>(); //Serviço Repositório Banco de Dados
+builder.Services.AddTransient<ITokenService, TokenService>(); // Serviço TOKEN
+builder.Services.AddTransient<IImageProcessingService, ImageProcessingService>(); // Serviço Process IMG 
 
-//TOken
 
-// Obtendo as configura��es do JWT do appsettings.json
+
+// Obtendo as configurações do JWT do appsettings.json
 var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"]);
 var issuer = jwtSettings["Issuer"];
 var audience = jwtSettings["Audience"];
 
 
-// Configura as autentica��es do JWT
+// Configura as autenticações do JWT
 builder.Services.AddAuthentication(x =>
 {
     x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -87,13 +88,15 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
+    app.UseSwaggerUI();
 
-    //Faz com que abra diretamente na url raiz do projeto
-    app.UseSwaggerUI(options => // UseSwaggerUI is called only in Development.
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-        options.RoutePrefix = string.Empty;
-    });
+    //Faz com que o Swagger abra diretamente pelo localhost, use no "app.UseSwaggerUI();"
+
+    //options =>
+    //{
+    //    options.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
+    //    options.RoutePrefix = string.Empty;
+    //}
 }
 
 app.UseHttpsRedirection();

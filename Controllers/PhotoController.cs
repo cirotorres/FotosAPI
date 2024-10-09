@@ -3,14 +3,10 @@ using FotosAPI.Models;
 using FotosAPI.ViewModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using static System.Net.Mime.MediaTypeNames;
 using Image = SixLabors.ImageSharp.Image;
-using SixLabors.ImageSharp.Processing;
 using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using FotosAPI.Services;
 
 namespace FotosAPI.Controllers
 {
@@ -20,11 +16,12 @@ namespace FotosAPI.Controllers
     {
         private readonly IPhotoRepository _photoRepository;
         private readonly ILogger<PhotoController> _logger;
-        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger)
+        private readonly IImageProcessingService _imageProcessingService;
+        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService)
         {
             _photoRepository = photoRepository ?? throw new ArgumentNullException(nameof(photoRepository));
             _logger = logger;
-
+            _imageProcessingService = imageProcessingService;
         }
 
 
@@ -45,8 +42,9 @@ namespace FotosAPI.Controllers
                 return Unauthorized("Token inválido ou informações faltando.");
             }
 
-            // Processo de Upload Foto e suas características
-            // caminho para a pasta de armazenamento da foto original com base no applicationId
+            // Início do processo de Upload Foto e suas características
+
+            // Criação do caminho para a pasta de armazenamento da foto original com base no applicationId
             var applicationDirectory = Path.Combine("Storage", applicationId);
             if (!Directory.Exists(applicationDirectory))
             {
@@ -54,49 +52,44 @@ namespace FotosAPI.Controllers
             }
             var filePath = Path.Combine(applicationDirectory, photoView.Picture.FileName);
 
-            // Processo de redimensionamento da imagem
-            int width, height;
+
             try
             {
-                using (Stream fileStream = new FileStream(filePath, FileMode.Create))
+                // Chamando o serviço de processamento de imagem.
+                var (width, height) = _imageProcessingService.ProcessAndSaveImage(photoView.Picture.OpenReadStream(), filePath, photoView.Quality);
+
+                // Se a thumbnail for true, cria a pasta e salva
+                if (photoView.Thumbnail)
                 {
-                    // Load imagem usando ImageSharp
-                    using (var image = Image.Load(photoView.Picture.OpenReadStream()))
+                    var thumbnailDirectory = Path.Combine(applicationDirectory, "thumbnails");
+                    var thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
+
+                    if (!Directory.Exists(thumbnailDirectory))
                     {
-                        // Captura a largura e altura da imagem
-                        width = image.Width;
-                        height = image.Height;
-
-                        // Usuário reduz a qualidade da imagem usando o atributo "Quality"
-                        var encoder = new JpegEncoder { Quality = photoView.Quality };
-                        image.Save(fileStream, encoder);
-
-                        // Criando miniatura/thumbnails
-                        if (photoView.Thumbnail)
-                        {
-                            var thumbnailDirectory = Path.Combine("Storage", applicationId, "thumbnails");
-                            var thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
-
-                            if (!Directory.Exists(thumbnailDirectory))
-                            {
-                                Directory.CreateDirectory(thumbnailDirectory);
-                            }
-
-                            // Redimensiona a thumbnail
-                            int thumbnailWidth = 150;
-                            int thumbnailHeight = (image.Height * thumbnailWidth) / image.Width; // Proporção 
-
-                            image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
-
-                            // Salva a thumbnail
-                            using (var thumbnailStream = new FileStream(thumbnailPath, FileMode.Create))
-                            {
-                                image.Save(thumbnailStream, encoder); // Usa o mesmo encoder para a thumbnail
-                            }
-                        }
+                        Directory.CreateDirectory(thumbnailDirectory);
                     }
+
+                    // Chamando o serviço de criação de thumb.
+                    _imageProcessingService.CreateThumbnail(filePath, thumbnailPath, 150); // Largura fixa da thumbnail
                 }
 
+                // Hora local (pode mover para dentro do bloco try)
+                var UploadedAt = DateTime.UtcNow;
+
+                // Verificação Thumb
+                var isthumb = photoView.Thumbnail;
+
+                // Cria o objeto Photo com suas atribuições
+                var photo = new Photo(filePath, photoView.Title, photoView.Thumbnail, width, height, UploadedAt, uploadedBy, applicationId, isthumb);
+
+                // Adiciona a foto ao repositório
+                _photoRepository.Add(photo);
+
+                // Converte o horário do upload para o timezone local
+                var localTimeZone = TimeZoneInfo.Local;
+                photo.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone);
+
+                return Ok(photo); 
             }
             catch (Exception ex)
             {
@@ -105,24 +98,7 @@ namespace FotosAPI.Controllers
             }
 
 
-            //Hora local
-            var UploadedAt = DateTime.UtcNow;
-
-            //Verificação Thumb
-            var isthumb = photoView.Thumbnail;
-
-            // Cria o objeto Photo com suas atribuições
-            var photo = new Photo(filePath, photoView.Title, photoView.Thumbnail, width, height, UploadedAt, uploadedBy, applicationId, isthumb);
-
-            // Adiciona a foto ao repositório
-            _photoRepository.Add(photo);
-
-            //Response com o horário local
-            var localTimeZone = TimeZoneInfo.Local;
-            photo.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone);
-
-            var objeto = _photoRepository.Get();
-            return Ok(photo);
+            
         }
 
 
@@ -137,13 +113,15 @@ namespace FotosAPI.Controllers
             if (obj == null || !obj.Any())
                 return NotFound("Lista vazia!");
 
+            var localTimeZone = TimeZoneInfo.Local;
+
             var photoreturnDTO = obj.Select(photo => new PhotoDTO(
 
                 Id: photo.Id,
                 Title: photo.Title,
                 UploadedBy: photo.UploadedBy,
                 ApplicationId: photo.ApplicationId,
-                UploadedAt: photo.UploadedAt
+                UploadedAt: TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone)
 
                 )).ToList();
 
@@ -157,11 +135,15 @@ namespace FotosAPI.Controllers
         [Route("find/{id}")]
         public IActionResult Get(int id)
         {
+            
             // Encontra o objeto cadastrado
             var obj = _photoRepository.Get(id);
             if (obj == null)
                 return NotFound("Objeto não encontrado");
 
+            //Ajuste horário local no response body
+            var localTimeZone = TimeZoneInfo.Local;
+            obj.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(obj.UploadedAt, localTimeZone);
 
             return Ok(obj);
         }
@@ -177,6 +159,10 @@ namespace FotosAPI.Controllers
                 return NotFound("Foto não encontrada");
 
             var dataBytes = System.IO.File.ReadAllBytes(pic.PicturePath);
+
+            //Ajuste horário local no response body
+            var localTimeZone = TimeZoneInfo.Local;
+            pic.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(pic.UploadedAt, localTimeZone);
 
             using (var image = Image.Load(pic.PicturePath))
             {
