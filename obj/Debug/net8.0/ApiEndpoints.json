@@ -1,0 +1,101 @@
+[
+  {
+    "ContainingType": "FotosAPI.Controllers.AuthController",
+    "Method": "GenerateToken",
+    "RelativePath": "api/Auth/generate-token",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FotosAPI.Controllers.PhotoController",
+    "Method": "GetAll",
+    "RelativePath": "photos/AllList",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FotosAPI.Controllers.PhotoController",
+    "Method": "Delete",
+    "RelativePath": "photos/delete/{id}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FotosAPI.Controllers.PhotoController",
+    "Method": "Get",
+    "RelativePath": "photos/find/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FotosAPI.Controllers.PhotoController",
+    "Method": "Add",
+    "RelativePath": "photos/upload",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "Picture",
+        "Type": "Microsoft.AspNetCore.Http.IFormFile",
+        "IsRequired": false
+      },
+      {
+        "Name": "Title",
+        "Type": "System.String",
+        "IsRequired": false
+      },
+      {
+        "Name": "Quality",
+        "Type": "System.Int32",
+        "IsRequired": false
+      },
+      {
+        "Name": "Thumbnail",
+        "Type": "System.Boolean",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "FotosAPI.Controllers.PhotoController",
+    "Method": "DownloadPhoto",
+    "RelativePath": "photos/view/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

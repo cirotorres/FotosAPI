@@ -52,7 +52,7 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddTransient<IPhotoRepository, PhotoRepository>(); //Serviço Repositório Banco de Dados
 builder.Services.AddTransient<ITokenService, TokenService>(); // Serviço TOKEN
 builder.Services.AddTransient<IImageProcessingService, ImageProcessingService>(); // Serviço Process IMG 
-
+builder.Services.AddTransient<IDeleteObjService, DeleteObjService>(); // Serviço de Deletar Objeto
 
 
 // Obtendo as configurações do JWT do appsettings.json

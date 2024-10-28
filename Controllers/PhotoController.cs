@@ -17,11 +17,13 @@ namespace FotosAPI.Controllers
         private readonly IPhotoRepository _photoRepository;
         private readonly ILogger<PhotoController> _logger;
         private readonly IImageProcessingService _imageProcessingService;
-        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService)
+        private readonly IDeleteObjService _deleteObjService;
+        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService, IDeleteObjService deleteObjService)
         {
             _photoRepository = photoRepository ?? throw new ArgumentNullException(nameof(photoRepository));
             _logger = logger;
             _imageProcessingService = imageProcessingService;
+            _deleteObjService = deleteObjService;
         }
 
 
@@ -30,11 +32,9 @@ namespace FotosAPI.Controllers
         [Route("upload")]
         public IActionResult Add([FromForm] PhotoViewModel photoView)
         {
-
             // Extrai as claims do token JWT
-            var uploadedBy = User.FindFirst(ClaimTypes.NameIdentifier)?.Value; // Pegando "nameidentifier" (sub)
-            var applicationId = User.FindFirst("appId")?.Value; // Pegando "appId"
-
+            var uploadedBy = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var applicationId = User.FindFirst("appId")?.Value;
 
             // Se for nulo ou vazio ele retorna não autorizado
             if (string.IsNullOrEmpty(uploadedBy) || string.IsNullOrEmpty(applicationId))
@@ -42,54 +42,12 @@ namespace FotosAPI.Controllers
                 return Unauthorized("Token inválido ou informações faltando.");
             }
 
-            // Início do processo de Upload Foto e suas características
-
-            // Criação do caminho para a pasta de armazenamento da foto original com base no applicationId
-            var applicationDirectory = Path.Combine("Storage", applicationId);
-            if (!Directory.Exists(applicationDirectory))
-            {
-                Directory.CreateDirectory(applicationDirectory);
-            }
-            var filePath = Path.Combine(applicationDirectory, photoView.Picture.FileName);
-
-
             try
             {
-                // Chamando o serviço de processamento de imagem.
-                var (width, height) = _imageProcessingService.ProcessAndSaveImage(photoView.Picture.OpenReadStream(), filePath, photoView.Quality);
+                // Chama o serviço/método de processamento completo de imagem
+                var photo = _imageProcessingService.AllImageProcess(photoView, uploadedBy, applicationId);
 
-                // Se a thumbnail for true, cria a pasta e salva
-                if (photoView.Thumbnail)
-                {
-                    var thumbnailDirectory = Path.Combine(applicationDirectory, "thumbnails");
-                    var thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
-
-                    if (!Directory.Exists(thumbnailDirectory))
-                    {
-                        Directory.CreateDirectory(thumbnailDirectory);
-                    }
-
-                    // Chamando o serviço de criação de thumb.
-                    _imageProcessingService.CreateThumbnail(filePath, thumbnailPath, 150); // Largura fixa da thumbnail
-                }
-
-                // Hora local (pode mover para dentro do bloco try)
-                var UploadedAt = DateTime.UtcNow;
-
-                // Verificação Thumb
-                var isthumb = photoView.Thumbnail;
-
-                // Cria o objeto Photo com suas atribuições
-                var photo = new Photo(filePath, photoView.Title, photoView.Thumbnail, width, height, UploadedAt, uploadedBy, applicationId, isthumb);
-
-                // Adiciona a foto ao repositório
-                _photoRepository.Add(photo);
-
-                // Converte o horário do upload para o timezone local
-                var localTimeZone = TimeZoneInfo.Local;
-                photo.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone);
-
-                return Ok(photo); 
+                return Ok(photo);
             }
             catch (Exception ex)
             {
@@ -98,7 +56,7 @@ namespace FotosAPI.Controllers
             }
 
 
-            
+
         }
 
 
@@ -183,60 +141,33 @@ namespace FotosAPI.Controllers
 
         public IActionResult Delete(int id)
         {
-            // Busca o objeto no repositório
-            var photoremove = _photoRepository.Get(id);
-
-            if (photoremove == null)
-            {
-                // Retorna 404 objeto não encontrado
-                return NotFound("Objeto não encontrado");
-            }
-
-            // Verifica se o ApplicationId está nulo ou vazio
-            if (string.IsNullOrEmpty(photoremove.ApplicationId))
-            {
-                // Deleta o objeto do banco de dados
-                _photoRepository.Delete(id);
-
-                return Ok(new { message = "Objeto foi deletado, mas não havia fotos relacionadas." });
-            }
-
-            // Obtém o caminho da pasta do applicationId
-            var applicationDirectory = Path.Combine("Storage", photoremove.ApplicationId);
-
             try
             {
-                // Verifica se a foto original existe e deleta
-                if (System.IO.File.Exists(photoremove.PicturePath))
-                {
-                    System.IO.File.Delete(photoremove.PicturePath);
-                }
-
-                // Verifica se o arquivo da thumbnail existe e deleta
-                var thumbnailPath = Path.Combine(applicationDirectory, "thumbnails", Path.GetFileName(photoremove.PicturePath));
-                if (System.IO.File.Exists(thumbnailPath))
-                {
-                    System.IO.File.Delete(thumbnailPath);
-                }
-
-                // Verifica se o diretório está vazio após deletar as fotos
-                if (!Directory.EnumerateFileSystemEntries(applicationDirectory).Any())
-                {
-                    // Se estiver vazio, deleta o diretório
-                    Directory.Delete(applicationDirectory, true);
-                }
+                // Chama o método de exclusão
+                bool deleteSuccessful = _deleteObjService.DeleteObj(id);
+             
+                if (deleteSuccessful)
+                    return Ok(new { message = "Objeto, Foto e miniatura deletados com sucesso." });
+            }
+            catch (KeyNotFoundException)
+            {
+                // Retorna 404 caso o objeto não seja encontrado
+                return NotFound("Objeto não encontrado");
+            }
+            catch (IOException ex)
+            {
+                // Retorna erro específico de I/O
+                _logger.LogError($"Erro ao excluir arquivos: {ex.Message}");
+                return StatusCode(500, $"Erro ao deletar: {ex.Message}");
             }
             catch (Exception ex)
             {
-                // Se houver erro, retorna 400 com a mensagem de erro
-                return StatusCode(400, $"Erro ao deletar: {ex.Message}");
+                // Captura outras exceções
+                _logger.LogError($"Erro desconhecido: {ex.Message}");
+                return StatusCode(500, "Erro interno ao processar a exclusão.");
             }
 
-            // Deleta o objeto do banco de dados
-            _photoRepository.Delete(id);
-
-            // Retorna 204 No Content para indicar que a operação foi bem-sucedida
-            return Ok(new { message = "Objeto, Foto e miniatura deletados com sucesso." });
+            return StatusCode(500, "Erro ao deletar o objeto.");
         }
 
 
