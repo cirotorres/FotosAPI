@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using static FotosAPI.Services.AuthClaimsService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,11 +50,12 @@ builder.Services.AddSwaggerGen(c =>
 
 });
 
-builder.Services.AddTransient<IPhotoRepository, PhotoRepository>(); //Serviço Repositório Banco de Dados
+builder.Services.AddTransient<IPhotoRepository, PhotoRepository>(); // Serviço Repositório Banco de Dados
 builder.Services.AddTransient<ITokenService, TokenService>(); // Serviço TOKEN
 builder.Services.AddTransient<IImageProcessingService, ImageProcessingService>(); // Serviço Process IMG 
 builder.Services.AddTransient<IDeleteObjService, DeleteObjService>(); // Serviço de Deletar Objeto
-
+builder.Services.AddTransient<IAuthClaimsService, AuthClaimsService> (); // Serviço extração Claims
+builder.Services.AddHttpContextAccessor(); // Para a extração de Claims do "User" na área de "AuthClaimsService.cs".
 
 // Obtendo as configurações do JWT do appsettings.json
 var jwtSettings = builder.Configuration.GetSection("Jwt");

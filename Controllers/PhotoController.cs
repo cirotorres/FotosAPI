@@ -7,6 +7,7 @@ using Image = SixLabors.ImageSharp.Image;
 using SixLabors.ImageSharp;
 using System.Security.Claims;
 using FotosAPI.Services;
+using System;
 
 namespace FotosAPI.Controllers
 {
@@ -18,12 +19,14 @@ namespace FotosAPI.Controllers
         private readonly ILogger<PhotoController> _logger;
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IDeleteObjService _deleteObjService;
-        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService, IDeleteObjService deleteObjService)
+        private readonly IAuthClaimsService _authClaimsService;
+        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService, IDeleteObjService deleteObjService, IAuthClaimsService authClaimsService)
         {
             _photoRepository = photoRepository ?? throw new ArgumentNullException(nameof(photoRepository));
             _logger = logger;
             _imageProcessingService = imageProcessingService;
             _deleteObjService = deleteObjService;
+            _authClaimsService = authClaimsService;
         }
 
 
@@ -32,30 +35,27 @@ namespace FotosAPI.Controllers
         [Route("upload")]
         public IActionResult Add([FromForm] PhotoViewModel photoView)
         {
-            // Extrai as claims do token JWT
-            var uploadedBy = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var applicationId = User.FindFirst("appId")?.Value;
-
-            // Se for nulo ou vazio ele retorna não autorizado
-            if (string.IsNullOrEmpty(uploadedBy) || string.IsNullOrEmpty(applicationId))
-            {
-                return Unauthorized("Token inválido ou informações faltando.");
-            }
-
+           
             try
             {
+                // Chama o serviço/método de extração de Claims do usuário. 
+                var (uploadedBy, applicationId) = _authClaimsService.GetUserClaims();
+
                 // Chama o serviço/método de processamento completo de imagem
                 var photo = _imageProcessingService.AllImageProcess(photoView, uploadedBy, applicationId);
 
                 return Ok(photo);
+            }
+
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
             }
             catch (Exception ex)
             {
                 _logger.LogError($"Erro ao fazer upload: {ex.Message}");
                 return StatusCode(500, "Erro interno ao processar a imagem.");
             }
-
-
 
         }
 
