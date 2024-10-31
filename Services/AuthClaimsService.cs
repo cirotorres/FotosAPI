@@ -21,7 +21,8 @@ namespace FotosAPI.Services
 
             if (string.IsNullOrEmpty(uploadedBy) || string.IsNullOrEmpty(applicationId))
             {
-                throw new UnauthorizedAccessException("Token inválido ou informações faltando.");
+                string missingClaim = string.IsNullOrEmpty(uploadedBy) ? "uploadedBy" : "applicationId";
+                throw new UnauthorizedAccessException($"Token inválido: a claim '{missingClaim}' está faltando.");
             }
 
             return (uploadedBy, applicationId);

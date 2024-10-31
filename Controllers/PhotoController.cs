@@ -46,15 +46,26 @@ namespace FotosAPI.Controllers
 
                 return Ok(photo);
             }
-
+          
             catch (UnauthorizedAccessException ex)
             {
+                // Retorna erro ao extrair Claims.
+                _logger.LogError($"Erro de autenticação: {ex.Message}");
                 return Unauthorized(ex.Message);
             }
+
+            catch (UnknownImageFormatException ex)
+            {
+                // Retorna erro de formato.
+                _logger.LogError($"Erro no formato: {ex.Message}");
+                return StatusCode(500, "Formato incorreto. Formatos desejados: JPEG, JPG, PNG, BMP");
+            }
+  
             catch (Exception ex)
             {
+                // Outros erros.
                 _logger.LogError($"Erro ao fazer upload: {ex.Message}");
-                return StatusCode(500, "Erro interno ao processar a imagem.");
+                return StatusCode(500, "Erro interno ao processar o upload. Entre em contato com o suporte.");
             }
 
         }
@@ -149,25 +160,22 @@ namespace FotosAPI.Controllers
                 if (deleteSuccessful)
                     return Ok(new { message = "Objeto, Foto e miniatura deletados com sucesso." });
             }
-            catch (KeyNotFoundException)
+            catch (KeyNotFoundException ex)
             {
-                // Retorna 404 caso o objeto não seja encontrado
-                return NotFound("Objeto não encontrado");
-            }
-            catch (IOException ex)
-            {
-                // Retorna erro específico de I/O
-                _logger.LogError($"Erro ao excluir arquivos: {ex.Message}");
-                return StatusCode(500, $"Erro ao deletar: {ex.Message}");
-            }
-            catch (Exception ex)
-            {
-                // Captura outras exceções
-                _logger.LogError($"Erro desconhecido: {ex.Message}");
-                return StatusCode(500, "Erro interno ao processar a exclusão.");
+                // Retorna objeto não encontrado.
+                _logger.LogError($"Erro: {ex.Message}");
+                return NotFound("Erro: O objeto não foi encontrado.");
             }
 
+            catch (Exception ex)
+            {
+                // Outros erros.
+                _logger.LogError($"Erro ao excluir objeto: {ex.Message}");
+                return StatusCode(500, "Erro interno ao processar a exclusão. Entre em contato com o suporte.");
+            }
+ 
             return StatusCode(500, "Erro ao deletar o objeto.");
+
         }
 
 
