@@ -15,7 +15,7 @@ namespace FotosAPI.Services
         public (string uploadedBy, string applicationId) GetUserClaims()
         {
             var user = _httpContextAccessor.HttpContext?.User;
-
+            // Extração das CLAIMS.
             var uploadedBy = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var applicationId = user?.FindFirst("appId")?.Value;
 

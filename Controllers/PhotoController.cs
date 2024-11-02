@@ -20,13 +20,20 @@ namespace FotosAPI.Controllers
         private readonly IImageProcessingService _imageProcessingService;
         private readonly IDeleteObjService _deleteObjService;
         private readonly IAuthClaimsService _authClaimsService;
-        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService, IDeleteObjService deleteObjService, IAuthClaimsService authClaimsService)
+        private readonly IFindObjService _findObjService;
+        private readonly IViewObjService _viewObjService;
+        private readonly IAllListService _allListService;
+
+        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService, IDeleteObjService deleteObjService, IAuthClaimsService authClaimsService, IFindObjService findObjService, IViewObjService viewObjService, IAllListService allListService)
         {
             _photoRepository = photoRepository ?? throw new ArgumentNullException(nameof(photoRepository));
             _logger = logger;
             _imageProcessingService = imageProcessingService;
             _deleteObjService = deleteObjService;
             _authClaimsService = authClaimsService;
+            _findObjService = findObjService;
+            _viewObjService = viewObjService;
+            _allListService = allListService;
         }
 
 
@@ -76,26 +83,23 @@ namespace FotosAPI.Controllers
         [Route("AllList")]
         public IActionResult GetAll()
         {
-            // Lista todos os objetos cadastrados
-            var obj = _photoRepository.GetAll();
+            try
+            {
+                // Lista todos os objetos cadastrados.
+                var photos = _allListService.AllList();
+                return Ok(photos);
+            }
 
-            if (obj == null || !obj.Any())
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex.Message);
                 return NotFound("Lista vazia!");
-
-            var localTimeZone = TimeZoneInfo.Local;
-
-            var photoreturnDTO = obj.Select(photo => new PhotoDTO(
-
-                Id: photo.Id,
-                Title: photo.Title,
-                UploadedBy: photo.UploadedBy,
-                ApplicationId: photo.ApplicationId,
-                UploadedAt: TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone)
-
-                )).ToList();
-
-
-            return Ok(photoreturnDTO);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro: {ex.Message}");
+                return StatusCode(500, "Erro interno . Entre em contato com o suporte.");
+            }
         }
 
 
@@ -104,18 +108,28 @@ namespace FotosAPI.Controllers
         [Route("find/{id}")]
         public IActionResult Get(int id)
         {
-            
-            // Encontra o objeto cadastrado
-            var obj = _photoRepository.Get(id);
-            if (obj == null)
-                return NotFound("Objeto não encontrado");
 
-            //Ajuste horário local no response body
-            var localTimeZone = TimeZoneInfo.Local;
-            obj.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(obj.UploadedAt, localTimeZone);
+            try
+            {
+                // Detalha o objeto selecionado.
+                var obj = _findObjService.FindObj(id);
+                return Ok(obj);
+            }
 
-            return Ok(obj);
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex.Message);
+                return NotFound("Erro: Objeto não encontrado.");
+            }
+
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro ao buscar objeto: {ex.Message}");
+                return StatusCode(500, "Erro interno ao buscar. Entre em contato com o suporte.");
+            }
+
         }
+
 
         [Authorize]
         [HttpGet]
@@ -123,26 +137,32 @@ namespace FotosAPI.Controllers
         [ResponseCache(Duration = 300)]
         public IActionResult DownloadPhoto(int id)
         {
-            var pic = _photoRepository.Get(id);
-            if (pic == null)
-                return NotFound("Foto não encontrada");
-
-            var dataBytes = System.IO.File.ReadAllBytes(pic.PicturePath);
-
-            //Ajuste horário local no response body
-            var localTimeZone = TimeZoneInfo.Local;
-            pic.UploadedAt = TimeZoneInfo.ConvertTimeFromUtc(pic.UploadedAt, localTimeZone);
-
-            using (var image = Image.Load(pic.PicturePath))
+            try
             {
-                // Adiciona informações de largura, altura e título nos headers
-                Response.Headers.Add("Photo-Width", image.Width.ToString());
-                Response.Headers.Add("Photo-Height", image.Height.ToString());
-                Response.Headers.Add("Photo-Title", pic.Title);
-                Response.Headers.Add("Photo-CreationDate", pic.UploadedAt.ToString("o"));
-            }
+                // Chama o serviço para obter a foto do objeto.
+                var (dataBytes, pic) = _viewObjService.ViewObj(id);
 
-            return File(dataBytes, "image/jpg");
+                using (var image = Image.Load(pic.PicturePath))
+                {
+                    // Adiciona informações de largura, altura e título nos headers
+                    Response.Headers.Add("Photo-Width", image.Width.ToString());
+                    Response.Headers.Add("Photo-Height", image.Height.ToString());
+                    Response.Headers.Add("Photo-Title", pic.Title);
+                    Response.Headers.Add("Photo-CreationDate", pic.UploadedAt.ToString("o"));
+                }
+
+                return File(dataBytes, "image/jpg");
+            }
+            catch (FileNotFoundException ex)
+            {
+                _logger.LogError($"Erro: {ex.Message}");
+                return NotFound("Erro: Foto não encontrada.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro ao buscar foto: {ex.Message}");
+                return StatusCode(500, "Erro interno ao processar a solicitação. Entre em contato com o suporte.");
+            }
         }
 
 
@@ -178,7 +198,6 @@ namespace FotosAPI.Controllers
 
         }
 
-
-
     }
+
 }

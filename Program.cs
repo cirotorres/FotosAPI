@@ -56,6 +56,9 @@ builder.Services.AddTransient<IImageProcessingService, ImageProcessingService>()
 builder.Services.AddTransient<IDeleteObjService, DeleteObjService>(); // Serviço de Deletar Objeto
 builder.Services.AddTransient<IAuthClaimsService, AuthClaimsService> (); // Serviço extração Claims
 builder.Services.AddHttpContextAccessor(); // Para a extração de Claims do "User" na área de "AuthClaimsService.cs".
+builder.Services.AddTransient<IFindObjService, FindObjService>(); // Serviço encontrar Objeto.
+builder.Services.AddTransient<IAllListService, AllListService>(); // Serviço lista todos os Objetos.
+builder.Services.AddTransient<IViewObjService, ViewObjService>(); // Serviço visualiza Imagem do Objeto.
 
 // Obtendo as configurações do JWT do appsettings.json
 var jwtSettings = builder.Configuration.GetSection("Jwt");
