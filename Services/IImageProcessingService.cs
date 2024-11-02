@@ -6,9 +6,9 @@ namespace FotosAPI.Services
 {
     public interface IImageProcessingService
     {
-        (int width, int height) ProcessAndSaveImage(Stream imageStream, string filePath, int quality);
-        void CreateThumbnail(string originalFilePath, string thumbnailPath, int thumbnailWidth);
+        Task<(int width, int height)> ProcessAndSaveImage(Stream imageStream, string filePath, int quality);
+        Task CreateThumbnail(string originalFilePath, string thumbnailPath, int thumbnailWidth);
 
-        Photo AllImageProcess(PhotoViewModel photoView, string uploadedBy, string applicationId);
+        Task<Photo> AllImageProcess(PhotoViewModel photoView, string uploadedBy, string applicationId);
     }
 }

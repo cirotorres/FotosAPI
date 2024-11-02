@@ -40,7 +40,7 @@ namespace FotosAPI.Controllers
         [Authorize]
         [HttpPost]
         [Route("upload")]
-        public IActionResult Add([FromForm] PhotoViewModel photoView)
+        public async Task<IActionResult> Add([FromForm] PhotoViewModel photoView)
         {
            
             try
@@ -49,7 +49,7 @@ namespace FotosAPI.Controllers
                 var (uploadedBy, applicationId) = _authClaimsService.GetUserClaims();
 
                 // Chama o serviço/método de processamento completo de imagem
-                var photo = _imageProcessingService.AllImageProcess(photoView, uploadedBy, applicationId);
+                var photo = await _imageProcessingService.AllImageProcess(photoView, uploadedBy, applicationId);
 
                 return Ok(photo);
             }
@@ -135,12 +135,12 @@ namespace FotosAPI.Controllers
         [HttpGet]
         [Route("view/{id}")]
         [ResponseCache(Duration = 300)]
-        public IActionResult DownloadPhoto(int id)
+        public async Task<IActionResult> DownloadPhoto(int id)
         {
             try
             {
                 // Chama o serviço para obter a foto do objeto.
-                var (dataBytes, pic) = _viewObjService.ViewObj(id);
+                var (dataBytes, pic) = await _viewObjService.ViewObj(id);
 
                 using (var image = Image.Load(pic.PicturePath))
                 {
@@ -178,7 +178,7 @@ namespace FotosAPI.Controllers
                 bool deleteSuccessful = _deleteObjService.DeleteObj(id);
              
                 if (deleteSuccessful)
-                    return Ok(new { message = "Objeto, Foto e miniatura deletados com sucesso." });
+                    return Ok("Objeto, Foto e miniatura deletados com sucesso.");
             }
             catch (KeyNotFoundException ex)
             {

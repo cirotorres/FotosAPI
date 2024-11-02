@@ -14,7 +14,7 @@ namespace FotosAPI.Services
         {
             _photoRepository = photoRepository;
         }
-        public (byte[] dataBytes, Photo photo) ViewObj(int id)
+        public async Task<(byte[] dataBytes, Photo photo)> ViewObj(int id)
         {
             // Busca a foto no repositório
             var pic = _photoRepository.Get(id);
@@ -22,7 +22,7 @@ namespace FotosAPI.Services
                 throw new FileNotFoundException("Foto não encontrada.");
 
             // Lê o conteúdo da imagem em bytes
-            var dataBytes = File.ReadAllBytes(pic.PicturePath);
+            var dataBytes = await File.ReadAllBytesAsync(pic.PicturePath);
 
             // Ajuste horário local no objeto Photo
             var localTimeZone = TimeZoneInfo.Local;
@@ -34,6 +34,6 @@ namespace FotosAPI.Services
 
     public interface IViewObjService
     {
-        (byte[] dataBytes, Photo photo) ViewObj(int id);
+        Task<(byte[] dataBytes, Photo photo)> ViewObj(int id);
     }
 }

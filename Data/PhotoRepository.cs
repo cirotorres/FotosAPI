@@ -5,7 +5,7 @@ namespace FotosAPI.Data
     public class PhotoRepository : IPhotoRepository
     {
         private readonly ConnectionContext _context = new ConnectionContext();
-        public void Add(Photo photo)
+        public async Task Add(Photo photo)
         {
             _context.Photos.Add(photo);
             _context.SaveChanges();

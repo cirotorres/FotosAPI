@@ -2,7 +2,7 @@
 {
     public interface IPhotoRepository
     {
-        void Add(Photo photo);
+        Task Add(Photo photo);
         void Delete(int id);
         List<Photo> Get();
         Photo Get(int id);

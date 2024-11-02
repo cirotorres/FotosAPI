@@ -18,7 +18,7 @@ namespace FotosAPI.Services
         public bool DeleteObj(int id)
         {
             // Busca o objeto no repositório
-            var photoremove = _photoRepository.Get(id);
+            var photoremove =  _photoRepository.Get(id);
             if (photoremove == null) throw new KeyNotFoundException("O objeto solicitado para exclusão não foi encontrado.");
 
             // Verifica se o ApplicationId está nulo ou vazio

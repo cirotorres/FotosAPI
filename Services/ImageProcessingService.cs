@@ -17,9 +17,9 @@ namespace FotosAPI.Services
         {
             _photoRepository = photoRepository;
         }
-        public (int width, int height) ProcessAndSaveImage(Stream imageStream, string filePath, int quality)
+        public async Task<(int width, int height)> ProcessAndSaveImage(Stream imageStream, string filePath, int quality)
         {
-            //Load imagem usando ImageSharp
+            //Carrega a imagem usando ImageSharp
             using (var image = Image.Load(imageStream))
             {
                 //Captura altura e largura
@@ -28,16 +28,16 @@ namespace FotosAPI.Services
 
                 // Salva a imagem com a qualidade especificada em "quality"
                 var encoder = new JpegEncoder { Quality = quality };
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                await using (var fileStream = new FileStream(filePath, FileMode.Create))
                 {
-                    image.Save(fileStream, encoder);
+                    await image.SaveAsync(fileStream, encoder);
                 }
 
                 return (width, height);
             }
         }
 
-        public void CreateThumbnail(string originalFilePath, string thumbnailPath, int thumbnailWidth)
+        public async Task CreateThumbnail(string originalFilePath, string thumbnailPath, int thumbnailWidth)
         {
             using (var image = Image.Load(originalFilePath))
             {
@@ -48,15 +48,15 @@ namespace FotosAPI.Services
                 image.Mutate(x => x.Resize(thumbnailWidth, thumbnailHeight));
 
                 var encoder = new JpegEncoder { Quality = 75 }; // Define uma qualidade 
-                using (var thumbnailStream = new FileStream(thumbnailPath, FileMode.Create))
+                await using (var thumbnailStream = new FileStream(thumbnailPath, FileMode.Create))
                 {
-                    image.Save(thumbnailStream, encoder);
+                    await image.SaveAsync(thumbnailStream, encoder);
                 }
             }
         }
 
 
-        public Photo AllImageProcess(PhotoViewModel photoView, string uploadedBy, string applicationId)
+        public async Task<Photo> AllImageProcess(PhotoViewModel photoView, string uploadedBy, string applicationId)
         {
             // Criação do caminho para a pasta de armazenamento da foto original com base no applicationId
             var applicationDirectory = Path.Combine("Storage", applicationId);
@@ -68,7 +68,7 @@ namespace FotosAPI.Services
             var filePath = Path.Combine(applicationDirectory, photoView.Picture.FileName);
 
             // Chamando o serviço de processamento de imagem.
-            var (width, height) = ProcessAndSaveImage(photoView.Picture.OpenReadStream(), filePath, photoView.Quality);
+            var (width, height) = await ProcessAndSaveImage(photoView.Picture.OpenReadStream(), filePath, photoView.Quality);
 
             if (photoView.Thumbnail)
             {
@@ -81,13 +81,13 @@ namespace FotosAPI.Services
                 }
 
                 // Chamando o serviço de criação de thumb.
-                CreateThumbnail(filePath, thumbnailPath, 150); // Thumbnail com largura fixa de 150px
+                await CreateThumbnail(filePath, thumbnailPath, 150); // Thumbnail com largura fixa de 150px
             }
 
             var uploadedAt = DateTime.UtcNow;
             var photo = new Photo(filePath, photoView.Title, photoView.Thumbnail, width, height, uploadedAt, uploadedBy, applicationId, photoView.Thumbnail);
 
-            _photoRepository.Add(photo);
+            await _photoRepository.Add(photo);
 
             // Converte o horário do upload para o timezone local
             var localTimeZone = TimeZoneInfo.Local;
