@@ -24,7 +24,14 @@ namespace FotosAPI.Controllers
         private readonly IViewObjService _viewObjService;
         private readonly IAllListService _allListService;
 
-        public PhotoController(IPhotoRepository photoRepository, ILogger<PhotoController> logger, IImageProcessingService imageProcessingService, IDeleteObjService deleteObjService, IAuthClaimsService authClaimsService, IFindObjService findObjService, IViewObjService viewObjService, IAllListService allListService)
+        public PhotoController(IPhotoRepository photoRepository, 
+            ILogger<PhotoController> logger, 
+            IImageProcessingService imageProcessingService, 
+            IDeleteObjService deleteObjService, 
+            IAuthClaimsService authClaimsService, 
+            IFindObjService findObjService, 
+            IViewObjService viewObjService, 
+            IAllListService allListService)
         {
             _photoRepository = photoRepository ?? throw new ArgumentNullException(nameof(photoRepository));
             _logger = logger;
@@ -57,7 +64,7 @@ namespace FotosAPI.Controllers
             catch (UnauthorizedAccessException ex)
             {
                 // Retorna erro ao extrair Claims.
-                _logger.LogError($"Erro de autenticação: {ex.Message}");
+                _logger.LogError($"Erro na extração: {ex.Message}");
                 return Unauthorized(ex.Message);
             }
 

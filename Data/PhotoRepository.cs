@@ -8,7 +8,7 @@ namespace FotosAPI.Data
         public async Task Add(Photo photo)
         {
             _context.Photos.Add(photo);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
         }
 
         public void Delete(int id)
@@ -19,11 +19,6 @@ namespace FotosAPI.Data
                 _context.Photos.Remove(photo);
                 _context.SaveChanges();
             }
-        }
-
-        public List<Photo> Get()
-        {
-            return _context.Photos.ToList();
         }
 
         public Photo? Get(int id)
