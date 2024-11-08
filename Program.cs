@@ -11,6 +11,16 @@ using static FotosAPI.Services.AuthClaimsService;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS (Cross-Origin Resource Sharing)((requisição de origem cruzada)
+// Para permitir que o front-end acesse a API, pois o front e a API possuem domínios diferentes. 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy => policy.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
+
 // Add services to the container.
 
 builder.Services.AddControllers();
@@ -88,6 +98,9 @@ builder.Services.AddAuthentication(x =>
 });
 
 var app = builder.Build();
+
+// CORS (Cross-Origin Resource Sharing)
+app.UseCors("AllowReactApp");
 
 
 if (app.Environment.IsDevelopment())
