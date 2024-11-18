@@ -15,6 +15,12 @@ namespace FotosAPI.Services
             _photoRepository = photoRepository;
         }
 
+        public Photo? FindObjById(int id)
+        {
+            // Busca o objeto no repositório
+            return _photoRepository.Get(id);
+        }
+
         public bool DeleteObj(int id)
         {
             // Busca o objeto no repositório

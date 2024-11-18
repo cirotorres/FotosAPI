@@ -8,6 +8,10 @@ using SixLabors.ImageSharp;
 using System.Security.Claims;
 using FotosAPI.Services;
 using System;
+using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Routing.Constraints;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
+using System.Net.NetworkInformation;
 
 namespace FotosAPI.Controllers
 {
@@ -43,9 +47,17 @@ namespace FotosAPI.Controllers
             _allListService = allListService;
         }
 
+        
+        public static string SanitizeFileName(string fileName)
+        {
+            // Remove caracteres não-ASCII
+            return Regex.Replace(fileName, @"[^\u0020-\u007E]", string.Empty);
+        }
+
 
         [Authorize]
         [HttpPost]
+        [Consumes("multipart/form-data")]
         [Route("upload")]
         public async Task<IActionResult> Add([FromForm] PhotoViewModel photoView)
         {
@@ -54,6 +66,17 @@ namespace FotosAPI.Controllers
             {
                 // Chama o serviço/método de extração de Claims do usuário. 
                 var (uploadedBy, applicationId) = _authClaimsService.GetUserClaims();
+
+                if (photoView.Picture == null)
+                {
+                    _logger.LogError("Arquivo de imagem não foi recebido.");
+                    return BadRequest("Arquivo de imagem é obrigatório.");
+                }
+
+                _logger.LogInformation($"Arquivo recebido: {photoView.Picture.FileName}");
+                _logger.LogInformation($"Headers: {Request.Headers}");
+                _logger.LogInformation($"Tamanho do arquivo: {photoView.Picture.Length}");
+                _logger.LogInformation($"Dados adicionais: Título={photoView.Title}, Qualidade={photoView.Quality}, Thumbnail={photoView.Thumbnail}");
 
                 // Chama o serviço/método de processamento completo de imagem
                 var photo = await _imageProcessingService.AllImageProcess(photoView, uploadedBy, applicationId);
@@ -144,20 +167,26 @@ namespace FotosAPI.Controllers
         [ResponseCache(Duration = 300)]
         public async Task<IActionResult> DownloadPhoto(int id)
         {
+            
             try
             {
+                
                 // Chama o serviço para obter a foto do objeto.
                 var (dataBytes, pic) = await _viewObjService.ViewObj(id);
+
+                // Elimina os caracteres especiais (não-ASCII).
+                string sanitizedTitle = SanitizeFileName(pic.Title);
 
                 using (var image = Image.Load(pic.PicturePath))
                 {
                     // Adiciona informações de largura, altura e título nos headers
                     Response.Headers.Add("Photo-Width", image.Width.ToString());
                     Response.Headers.Add("Photo-Height", image.Height.ToString());
-                    Response.Headers.Add("Photo-Title", pic.Title);
+                    Response.Headers.Add("Photo-Title", sanitizedTitle);
                     Response.Headers.Add("Photo-CreationDate", pic.UploadedAt.ToString("o"));
+                    
                 }
-
+               
                 return File(dataBytes, "image/jpg");
             }
             catch (FileNotFoundException ex)
@@ -181,11 +210,12 @@ namespace FotosAPI.Controllers
         {
             try
             {
+                var photo = _deleteObjService.FindObjById(id);
                 // Chama o método de exclusão
                 bool deleteSuccessful = _deleteObjService.DeleteObj(id);
              
                 if (deleteSuccessful)
-                    return Ok("Objeto, Foto e miniatura deletados com sucesso.");
+                    return Ok($"Id:{id}/Título:{photo.Title}. Objeto, Foto e miniatura deletados com sucesso!"); 
             }
             catch (KeyNotFoundException ex)
             {

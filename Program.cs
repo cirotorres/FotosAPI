@@ -11,6 +11,9 @@ using static FotosAPI.Services.AuthClaimsService;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.UseUrls("https://0.0.0.0:7147", "http://0.0.0.0:5216");
+
+
 // CORS (Cross-Origin Resource Sharing)((requisição de origem cruzada)
 // Para permitir que o front-end acesse a API, pois o front e a API possuem domínios diferentes. 
 builder.Services.AddCors(options =>
@@ -117,7 +120,7 @@ if (app.Environment.IsDevelopment())
     //}
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // Ativa o middleware de autenticacao e autorizacao
 app.UseAuthentication();
