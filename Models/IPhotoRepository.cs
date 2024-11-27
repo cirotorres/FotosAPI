@@ -6,5 +6,6 @@
         void Delete(int id);
         Photo Get(int id);
         List<Photo> GetAll();
+       
     }
 }

@@ -70,10 +70,11 @@ namespace FotosAPI.Services
             // Chamando o serviço de processamento de imagem.
             var (width, height) = await ProcessAndSaveImage(photoView.Picture.OpenReadStream(), filePath, photoView.Quality);
 
+            string? thumbnailPath = null;
             if (photoView.Thumbnail)
             {
                 var thumbnailDirectory = Path.Combine(applicationDirectory, "thumbnails");
-                var thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
+                thumbnailPath = Path.Combine(thumbnailDirectory, photoView.Picture.FileName);
 
                 if (!Directory.Exists(thumbnailDirectory))
                 {
@@ -82,12 +83,18 @@ namespace FotosAPI.Services
 
                 // Chamando o serviço de criação de thumb.
                 await CreateThumbnail(filePath, thumbnailPath, 150); // Thumbnail com largura fixa de 150px
+                
             }
 
             var uploadedAt = DateTime.UtcNow;
-            var photo = new Photo(filePath, photoView.Title, photoView.Thumbnail, width, height, uploadedAt, uploadedBy, applicationId, photoView.Thumbnail);
+            var photo = new Photo(filePath, photoView.Title, photoView.Thumbnail, width, height, uploadedAt, uploadedBy, applicationId, photoView.Thumbnail)
+            {
+                ThumbPath = thumbnailPath // Atribui o caminho da thumbnail
+            };
 
             await _photoRepository.Add(photo);
+
+            
 
             // Converte o horário do upload para o timezone local
             var localTimeZone = TimeZoneInfo.Local;

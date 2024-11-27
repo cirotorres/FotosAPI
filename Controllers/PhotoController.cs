@@ -27,6 +27,7 @@ namespace FotosAPI.Controllers
         private readonly IFindObjService _findObjService;
         private readonly IViewObjService _viewObjService;
         private readonly IAllListService _allListService;
+        private readonly IThumbnailService _thumbnailService;
 
         public PhotoController(IPhotoRepository photoRepository, 
             ILogger<PhotoController> logger, 
@@ -35,7 +36,8 @@ namespace FotosAPI.Controllers
             IAuthClaimsService authClaimsService, 
             IFindObjService findObjService, 
             IViewObjService viewObjService, 
-            IAllListService allListService)
+            IAllListService allListService,
+            IThumbnailService thumbnailService)
         {
             _photoRepository = photoRepository ?? throw new ArgumentNullException(nameof(photoRepository));
             _logger = logger;
@@ -45,6 +47,7 @@ namespace FotosAPI.Controllers
             _findObjService = findObjService;
             _viewObjService = viewObjService;
             _allListService = allListService;
+            _thumbnailService = thumbnailService;
         }
 
         
@@ -198,6 +201,29 @@ namespace FotosAPI.Controllers
             {
                 _logger.LogError($"Erro ao buscar foto: {ex.Message}");
                 return StatusCode(500, "Erro interno ao processar a solicitação. Entre em contato com o suporte.");
+            }
+        }
+
+        [Authorize]
+        [HttpGet]
+        [Route("thumbnail/{id}")]
+        public async Task<IActionResult> ViewThumbnail(int id)
+        {
+            try
+            {
+                var (dataBytes, pic) = await _thumbnailService.GetViewThumbnails(id);
+                using (var image = Image.Load(pic.ThumbPath))
+                return File(dataBytes, "image/jpg");
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning($"Aviso: {ex.Message}");
+                return NotFound("Nenhuma thumbnail encontrada.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Erro ao buscar thumbnails: {ex.Message}");
+                return StatusCode(500, "Erro interno ao buscar thumbnails. Entre em contato com o suporte.");
             }
         }
 

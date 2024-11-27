@@ -31,6 +31,6 @@ namespace FotosAPI.Data
             return _context.Photos.ToList();
         }
 
-        
+
     }
 }
