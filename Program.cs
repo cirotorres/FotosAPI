@@ -4,6 +4,7 @@ using FotosAPI.Models;
 using FotosAPI.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -12,7 +13,6 @@ using static FotosAPI.Services.AuthClaimsService;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.UseUrls("https://0.0.0.0:7147", "http://0.0.0.0:5216");
-
 
 // CORS (Cross-Origin Resource Sharing)((requisição de origem cruzada)
 // Para permitir que o front-end acesse a API, pois o front e a API possuem domínios diferentes. 
@@ -68,11 +68,11 @@ builder.Services.AddTransient<ITokenService, TokenService>(); // Serviço TOKEN
 builder.Services.AddTransient<IImageProcessingService, ImageProcessingService>(); // Serviço Process IMG 
 builder.Services.AddTransient<IDeleteObjService, DeleteObjService>(); // Serviço de Deletar Objeto
 builder.Services.AddTransient<IAuthClaimsService, AuthClaimsService> (); // Serviço extração Claims
-builder.Services.AddHttpContextAccessor(); // Para a extração de Claims do "User" na área de "AuthClaimsService.cs".
-builder.Services.AddTransient<IFindObjService, FindObjService>(); // Serviço encontrar Objeto.
+builder.Services.AddHttpContextAccessor(); // Para a extração de Claims do "User" na área de "AuthClaimsService.cs" e URL Thumb.
+builder.Services.AddTransient<IFindObjService, FindObjService>(); // Serviço mostra todas as informações do obj.
 builder.Services.AddTransient<IAllListService, AllListService>(); // Serviço lista todos os Objetos.
-builder.Services.AddTransient<IViewObjService, ViewObjService>();
-builder.Services.AddTransient<IThumbnailService, ThumbnailService>();// Serviço visualiza Imagem do Objeto.
+builder.Services.AddTransient<IViewObjService, ViewObjService>(); // Serviço visualiza Imagem do Objeto.
+builder.Services.AddTransient<IThumbnailService, ThumbnailService>();// Serviço visualiza Thumb do Objeto.
 
 // Obtendo as configurações do JWT do appsettings.json
 var jwtSettings = builder.Configuration.GetSection("Jwt");
@@ -105,6 +105,14 @@ var app = builder.Build();
 
 // CORS (Cross-Origin Resource Sharing)
 app.UseCors("AllowReactApp");
+
+// URL para ThumbPath
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(builder.Environment.ContentRootPath, "Storage")),
+    RequestPath = "/Storage"
+});
 
 
 if (app.Environment.IsDevelopment())

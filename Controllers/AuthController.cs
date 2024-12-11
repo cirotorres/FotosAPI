@@ -20,7 +20,7 @@ namespace FotosAPI.Controllers
         public IActionResult GenerateToken()
         {
             // Dados do usuário e aplicativo 
-            string userName = "Ciro Torres";
+            string userName = "Felipe da Silva";
             string appId = "APIFotos";
 
             // Gera o token

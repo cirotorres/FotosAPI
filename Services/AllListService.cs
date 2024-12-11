@@ -5,10 +5,12 @@ namespace FotosAPI.Services
     public class AllListService : IAllListService
     {
         private readonly IPhotoRepository _photoRepository;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AllListService(IPhotoRepository photoRepository)
+        public AllListService(IPhotoRepository photoRepository, IHttpContextAccessor httpContextAccessor)
         {
             _photoRepository = photoRepository;
+            _httpContextAccessor = httpContextAccessor;
         }
         public List<PhotoDTO> AllList()
         {
@@ -20,13 +22,18 @@ namespace FotosAPI.Services
 
             var localTimeZone = TimeZoneInfo.Local;
 
+            var httpContext = _httpContextAccessor.HttpContext;
+
             var photoreturnDTO = obj.Select(photo => new PhotoDTO(
 
                 Id: photo.Id,
                 Title: photo.Title,
                 UploadedBy: photo.UploadedBy,
-                ApplicationId: photo.ApplicationId,
-                UploadedAt: TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone)
+                UploadedAt: TimeZoneInfo.ConvertTimeFromUtc(photo.UploadedAt, localTimeZone),
+                ThumbPath: photo.ThumbPath != null && System.IO.File.Exists(photo.ThumbPath)
+                    ? $"{httpContext.Request.Scheme}://{httpContext.Request.Host}/Storage/{photo.ApplicationId}/thumbnails/{Path.GetFileName(photo.ThumbPath)}"
+                    : null
+
 
                 )).ToList();
 
